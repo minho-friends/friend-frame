@@ -1,0 +1,8 @@
+name = "friend-frame"
+main = "src/index.ts"
+compatibility_date = "2023-07-24"
+
+[vars]
+# NOTE: DO NOT MODIFY HERE (Check `.dev.vars.sample`)
+TARGET_HOST = ""
+TARGET_KEYWORD = ""

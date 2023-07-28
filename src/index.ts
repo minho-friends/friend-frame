@@ -56,8 +56,7 @@ export default {
 
     if (request.method === "GET" && new_response_headers.get('Content-Type')?.includes('html')) {
       const new_modified_response = new HTMLRewriter()  // NOTE: The unexpected benefit of this project.
-        // FIXME: on CORS on XMLHttpRequest
-        // .on('head', new BaseAdder(env.TARGET_HOST))
+        .on('head', new BaseAdder(env.TARGET_HOST))
         .on('header', elementRemover)
         .on('footer', elementRemover)
         .on('script', KeywordRemoverButInZeroCopy(env.TARGET_KEYWORD))

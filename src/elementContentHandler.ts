@@ -9,12 +9,24 @@ class ElementRemover implements HTMLRewriterElementContentHandlers {
 
 export
 class BaseAdder implements HTMLRewriterElementContentHandlers {
+  // NOTE: It reduce the huge bill on cloudflare worker. Because we don't handle the assets anymore.
+
   _baseHref: string;
   constructor(baseHref: string) {
     this._baseHref = baseHref;
   }
   element(element: Element) {
     element.prepend('<base href="//' + this._baseHref + '">', { html: true });
+    // NOTE: Bypassing the base on XMLHttpRequest for CORS. (Hack)
+    // Everything goes on `this._baseHref` but XMLHttpRequest (Huge thanks for $.ajax) goes on `origin`.
+    element.append(`<script>
+      $.ajaxSetup({
+        xhr: function () {
+          this.url = (new URL(this.url, (new URL(location.href)).origin)).href;
+          return new XMLHttpRequest();
+        },
+      });
+    </script>`, { html: true });
   }
 }
 

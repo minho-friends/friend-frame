@@ -27,7 +27,10 @@ export default {
 
     const _cache = await caches.open(`cache:friend-frame:${env.TARGET_HOST}:${env.TARGET_KEYWORD || "_empty_"}`);
     const _cache_key = _cache && request.method !== "GET" ? await generateCacheKeyAnyway(request) : request;
-    if (_cache) {
+    if (request.headers.get('Cache-Control') === 'no-cache') {  // FIXME: naive, but works on chrome.
+      // NOTE: for friends... force update to cache.
+      // so can be cached more longer.
+    } else if (_cache) {
       const cached_response = await _cache.match(_cache_key);
       if (cached_response) {
         return cached_response;

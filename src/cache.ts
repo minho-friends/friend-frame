@@ -31,7 +31,7 @@ export async function generateCacheKeyAnyway(request: Request): Promise<Request>
 
 export function removeResponseHeadersForCaching(mutable_response_headers: Headers) {
   // NOTE: https://developers.cloudflare.com/workers/runtime-apis/cache/#headers
-  mutable_response_headers.set('Cache-Control', `max-age=${60 * 60 * 2}`);
+  mutable_response_headers.set('Cache-Control', `max-age=${60 * 60 * 24}`);
   mutable_response_headers.delete('Pragma');
   mutable_response_headers.delete('Expires');
   // NOTE: `Responses with Set-Cookie headers are never cached`.

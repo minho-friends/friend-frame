@@ -7,6 +7,16 @@ class ElementRemover implements HTMLRewriterElementContentHandlers {
 }
 const elementRemover = new ElementRemover();
 
+class BaseAdder implements HTMLRewriterElementContentHandlers {
+  _baseHref: string;
+  constructor(baseHref: string) {
+    this._baseHref = baseHref;
+  }
+  element(element: Element) {
+    element.prepend('<base href="//' + this._baseHref + '">', { html: true });
+  }
+}
+
 const KeywordRemoverButInZeroCopy = (keyword /* FIXME: keywordHopelyInFirstChunkSoNotCorruptingElement */: string): HTMLRewriterElementContentHandlers => {
   // NOTE: https://developers.cloudflare.com/workers/runtime-apis/html-rewriter/#text-chunks
   // NOTE: beware in future use (FIXMEs)
@@ -65,6 +75,8 @@ export default {
 
     if (request.method === "GET" && new_response_headers.get('Content-Type')?.includes('html')) {
       return new HTMLRewriter()
+        // FIXME: on CORS
+        // .on('head', new BaseAdder(env.TARGET_HOST))
         .on('header', elementRemover)
         .on('footer', elementRemover)
         .on('script', KeywordRemoverButInZeroCopy(env.TARGET_KEYWORD))

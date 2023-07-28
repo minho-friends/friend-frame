@@ -52,6 +52,12 @@ export default {
     if (new_request_url.href.includes("/backpg/")) {
       return new Response('', { status: 501 });
     }
+    if (new_request_url.pathname.includes("/robots.txt")) {
+      return new Response('User-agent: *\nDisallow: /\n');
+    }
+    if (new_request_url.pathname.includes("/favicon.ico")) {
+      return new Response('', { status: 404 });
+    }
 
     new_request_url.host = env.TARGET_HOST;
 

@@ -1,43 +1,8 @@
 import type { Env } from "./env";
 import { cacheKeyGenerateAnyway, cacheMatch, cachePut, removeResponseHeadersForCaching } from "./cache";
+import { ElementRemover, BaseAdder, KeywordRemoverButInZeroCopy } from './elementContentHandler';
 
-class ElementRemover implements HTMLRewriterElementContentHandlers {
-  element(element: Element) {
-    element.remove();
-  }
-}
 const elementRemover = new ElementRemover();
-
-class BaseAdder implements HTMLRewriterElementContentHandlers {
-  _baseHref: string;
-  constructor(baseHref: string) {
-    this._baseHref = baseHref;
-  }
-  element(element: Element) {
-    element.prepend('<base href="//' + this._baseHref + '">', { html: true });
-  }
-}
-
-const KeywordRemoverButInZeroCopy = (keyword /* FIXME: keywordHopelyInFirstChunkSoNotCorruptingElement */: string): HTMLRewriterElementContentHandlers => {
-  // NOTE: https://developers.cloudflare.com/workers/runtime-apis/html-rewriter/#text-chunks
-  // NOTE: beware in future use (FIXMEs)
-
-  let _foundPreviously = false;
-  class _KeywordRemoverButInZeroCopy implements HTMLRewriterElementContentHandlers {
-    text(element: Text) {
-      if (!keyword) return;
-      if (_foundPreviously || element.text.includes(keyword) /* FIXME: what-if the keyword splitted in first chunk? */) {
-        element.remove();
-        if (element.lastInTextNode /* NOTE: search done? */) {
-          _foundPreviously = false;
-        } else {
-          _foundPreviously = true;
-        }
-      }
-    }
-  }
-  return new _KeywordRemoverButInZeroCopy();
-};
 
 export default {
   async fetch(
@@ -81,7 +46,7 @@ export default {
         headers: new_request_headers,
     });
     const new_response_headers = new Headers(_response.headers);
-    new_response_headers.delete('x-frame-options');
+    new_response_headers.delete('x-frame-options');  // NOTE: The ultimate goal of this project.
     removeResponseHeadersForCaching(new_response_headers);
 
     const new_response = new Response(_response.body, {
@@ -90,8 +55,8 @@ export default {
     });
 
     if (request.method === "GET" && new_response_headers.get('Content-Type')?.includes('html')) {
-      const new_modified_response = new HTMLRewriter()
-        // FIXME: on CORS
+      const new_modified_response = new HTMLRewriter()  // NOTE: The unexpected benefit of this project.
+        // FIXME: on CORS on XMLHttpRequest
         // .on('head', new BaseAdder(env.TARGET_HOST))
         .on('header', elementRemover)
         .on('footer', elementRemover)

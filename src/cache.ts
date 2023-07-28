@@ -19,9 +19,9 @@ async function sha256(message: string) {
 export async function generateCacheKeyAnyway(request: Request): Promise<Request> {
   // NOTE: This function requires to run before `request` was sent & spent to TARGET_HOST because of the `.clone()`.
   const body = await request.clone().text();
-  const hash = await sha256(body);
+  const hash = body ? await sha256(body) : '';
   const cacheUrl = new URL(request.url);
-  cacheUrl.pathname = `/.well-known/cache-other-methods/${request.method}` + cacheUrl.pathname + '&&' + hash;  // NOTE: meaningless.
+  cacheUrl.pathname = `/.well-known/cache-other-methods/${request.method}${cacheUrl.pathname}&&${hash}`;  // NOTE: meaningless.
   const cacheKey = new Request(cacheUrl.toString(), {
     headers: request.headers,
     method: "GET", // NOTE: https://developers.cloudflare.com/workers/examples/cache-post-request/

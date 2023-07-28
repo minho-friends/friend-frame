@@ -16,7 +16,7 @@ async function sha256(message: string) {
     .join("");
 }
 
-export async function cacheKeyGenerateAnyway(request: Request): Promise<Request> {
+export async function generateCacheKeyAnyway(request: Request): Promise<Request> {
   // NOTE: This function requires to run before `request` was sent & spent to TARGET_HOST because of the `.clone()`.
   const body = await request.clone().text();
   const hash = await sha256(body);
@@ -27,22 +27,6 @@ export async function cacheKeyGenerateAnyway(request: Request): Promise<Request>
     method: "GET", // NOTE: https://developers.cloudflare.com/workers/examples/cache-post-request/
   });
   return cacheKey;
-}
-
-export function cacheMatch(cache: Cache, request: Request, notGetRequest?: Request): Promise<Response | undefined> {
-  if (notGetRequest) {
-    return cache.match(notGetRequest);
-  }
-  return cache.match(request);
-}
-
-export function cachePut(cache: Cache, ctx: ExecutionContext, request: Request, response: Response, notGetRequest?: Request) {
-  console.log('cache put', request.url);
-  if (notGetRequest) {
-    ctx.waitUntil(cache.put(notGetRequest, response.clone()));
-  } else {
-    ctx.waitUntil(cache.put(request, response.clone()));
-  }
 }
 
 export function removeResponseHeadersForCaching(mutable_response_headers: Headers) {

@@ -1,5 +1,5 @@
 import type { Env } from "./env";
-import { cacheKeyGenerateAnyway, cacheMatch, cachePut, removeResponseHeadersForCaching } from "./cache";
+import { generateCacheKeyAnyway, removeResponseHeadersForCaching } from "./cache";
 import { ElementRemover, BaseAdder, KeywordRemoverButInZeroCopy } from './elementContentHandler';
 
 const elementRemover = new ElementRemover();
@@ -26,10 +26,12 @@ export default {
     }
 
     const _cache = await caches.open(`cache:friend-frame:${env.TARGET_HOST}:${env.TARGET_KEYWORD || "_empty_"}`);
-    const _forceCachingKey = request.method !== "GET" ? await cacheKeyGenerateAnyway(request) : undefined;
-    const cachedResponse = await cacheMatch(_cache, request, _forceCachingKey);
-    if (cachedResponse) {
-      return cachedResponse;
+    const _cache_key = _cache && request.method !== "GET" ? await generateCacheKeyAnyway(request) : request;
+    if (_cache) {
+      const cached_response = await _cache.match(_cache_key);
+      if (cached_response) {
+        return cached_response;
+      }
     }
 
     // NOTE: Generating the response...
@@ -61,10 +63,11 @@ export default {
         .on('footer', elementRemover)
         .on('script', KeywordRemoverButInZeroCopy(env.TARGET_KEYWORD))
         .transform(new_response);
-      await cachePut(_cache, ctx, request, new_modified_response, _forceCachingKey);
+
+      if (_cache) ctx.waitUntil(_cache.put(_cache_key, new_modified_response.clone()));
       return new_modified_response;
     }
-    await cachePut(_cache, ctx, request, new_response, _forceCachingKey);
+    if (_cache) ctx.waitUntil(_cache.put(_cache_key, new_response.clone()));
     return new_response;
   }
 };

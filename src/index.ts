@@ -1,4 +1,5 @@
 import type { Env } from "./env";
+import { cacheKeyGenerateAnyway, cacheMatch, cachePut, removeResponseHeadersForCaching } from "./cache";
 
 class ElementRemover implements HTMLRewriterElementContentHandlers {
   element(element: Element) {
@@ -59,6 +60,14 @@ export default {
       return new Response('', { status: 404 });
     }
 
+    const _cache = await caches.open(`cache:friend-frame:${env.TARGET_HOST}:${env.TARGET_KEYWORD || "_empty_"}`);
+    const _forceCachingKey = request.method !== "GET" ? await cacheKeyGenerateAnyway(request) : undefined;
+    const cachedResponse = await cacheMatch(_cache, request, _forceCachingKey);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+
+    // NOTE: Generating the response...
     new_request_url.host = env.TARGET_HOST;
 
     const new_request_headers = new Headers(request.headers);
@@ -73,6 +82,7 @@ export default {
     });
     const new_response_headers = new Headers(_response.headers);
     new_response_headers.delete('x-frame-options');
+    removeResponseHeadersForCaching(new_response_headers);
 
     const new_response = new Response(_response.body, {
       status: _response.status,
@@ -80,14 +90,17 @@ export default {
     });
 
     if (request.method === "GET" && new_response_headers.get('Content-Type')?.includes('html')) {
-      return new HTMLRewriter()
+      const new_modified_response = new HTMLRewriter()
         // FIXME: on CORS
         // .on('head', new BaseAdder(env.TARGET_HOST))
         .on('header', elementRemover)
         .on('footer', elementRemover)
         .on('script', KeywordRemoverButInZeroCopy(env.TARGET_KEYWORD))
         .transform(new_response);
+      await cachePut(_cache, ctx, request, new_modified_response, _forceCachingKey);
+      return new_modified_response;
     }
+    await cachePut(_cache, ctx, request, new_response, _forceCachingKey);
     return new_response;
   }
 };

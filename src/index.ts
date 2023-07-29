@@ -1,6 +1,7 @@
 import type { Env } from "./env";
 import { generateCacheKeyAnyway, removeResponseHeadersForCaching } from "./cache";
 import { ElementRemover, BaseAdder, KeywordRemoverButInZeroCopy } from './elementContentHandler';
+import { serviceWorkerModuleResponseBody, serviceWorkerModuleResposneHeaders } from './sw';
 
 const elementRemover = new ElementRemover();
 
@@ -23,6 +24,9 @@ export default {
     }
     if (new_request_url.pathname.includes("/favicon.ico")) {
       return new Response('', { status: 404 });
+    }
+    if (new_request_url.pathname.includes("/sw.js")) {
+      return new Response(serviceWorkerModuleResponseBody, { headers: serviceWorkerModuleResposneHeaders });
     }
 
     const _cache = await caches.open(`cache:friend-frame:${env.TARGET_HOST}:${env.TARGET_KEYWORD || "_empty_"}`);

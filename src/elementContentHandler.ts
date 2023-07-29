@@ -1,5 +1,7 @@
 // FIXME: git-diff friendly, not lint friendly file.
 
+import { serviceWorkerInstallerModule } from './sw';
+
 export
 class ElementRemover implements HTMLRewriterElementContentHandlers {
   element(element: Element) {
@@ -27,6 +29,8 @@ class BaseAdder implements HTMLRewriterElementContentHandlers {
         },
       });
     </script>`, { html: true });
+    // FIXME: service worker experimental.
+    // element.append(serviceWorkerInstallerModule, { html: true });
   }
 }
 

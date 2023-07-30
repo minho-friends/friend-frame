@@ -21,15 +21,17 @@ class BaseAdder implements HTMLRewriterElementContentHandlers {
     element.prepend('<base href="//' + this._baseHref + '">', { html: true });
     // NOTE: Bypassing the base on XMLHttpRequest for CORS. (Hack)
     // Everything goes on `this._baseHref` but XMLHttpRequest (Huge thanks for $.ajax) goes on `origin`.
+    // NOTE: xhr(async=true) required: https://bugs.chromium.org/p/chromium/issues/detail?id=602051
     element.append(`<script>
       $.ajaxSetup({
         xhr: function () {
           this.url = (new URL(this.url, (new URL(location.href)).origin)).href;
+          this.async = true;
           return new XMLHttpRequest();
         },
       });
     </script>`, { html: true });
-    // FIXME: service worker experimental.
+    // FIXME: experimental.
     // element.append(serviceWorkerInstallerModule, { html: true });
   }
 }

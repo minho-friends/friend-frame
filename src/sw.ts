@@ -3,7 +3,7 @@ export const serviceWorkerModuleResponseBody = `
     'https://storage.googleapis.com/workbox-cdn/releases/6.4.1/workbox-sw.js'
   );
   workbox.setConfig({
-    debug: true,  // FIXME: experimental.
+    debug: true,
   });
   workbox.loadModule('workbox-routing');
   workbox.loadModule('workbox-strategies');
@@ -18,13 +18,12 @@ export const serviceWorkerModuleResponseBody = `
     new workbox.strategies.NetworkOnly(),
   );
 
-  // FIXME: POST doesn't covered on workbox.
   workbox.routing.registerRoute(
     'http://localhost:8787/ajax/get_map_data.cm',
+    // FIXME: convert this to GET and ignoreMethod: true,
     new workbox.strategies.StaleWhileRevalidate({
       plugins: [new workbox.broadcastUpdate.BroadcastUpdatePlugin()],
       matchOptions: {
-        ignoreVary: true,
         ignoreMethod: true,
       },
     }),
@@ -37,7 +36,6 @@ export const serviceWorkerModuleResponseBody = `
       plugins: [new workbox.broadcastUpdate.BroadcastUpdatePlugin()],
       matchOptions: {
         ignoreVary: true,  // FIXME: experimental.
-        ignoreMethod: true,  // FIXME: experimental.
       },
     }),
   );

@@ -1,9 +1,8 @@
 import type { Env } from "./env";
 import { generateCacheKeyAnyway, removeResponseHeadersForCaching } from "./cache";
-import { ElementRemover, BaseAdder, KeywordRemoverButInZeroCopy } from './elementContentHandler';
+import { MetabaseFooterRemover } from './elementContentHandler';
 import { serviceWorkerModuleResponseBody, serviceWorkerModuleResposneHeaders } from './sw';
 
-const elementRemover = new ElementRemover();
 
 export default {
   async fetch(
@@ -55,7 +54,7 @@ export default {
         headers: new_request_headers,
     });
     const new_response_headers = new Headers(_response.headers);
-    new_response_headers.delete('x-frame-options');  // NOTE: The ultimate goal of this project.
+    new_response_headers.delete('Content-Security-Policy');  // NOTE: The unexpected blocker of this project.
     removeResponseHeadersForCaching(new_response_headers);
 
     const new_response = new Response(_response.body, {
@@ -64,11 +63,8 @@ export default {
     });
 
     if (request.method === "GET" && new_response_headers.get('Content-Type')?.includes('html')) {
-      const new_modified_response = new HTMLRewriter()  // NOTE: The unexpected benefit of this project.
-        .on('head', new BaseAdder(env.TARGET_HOST))
-        .on('header', elementRemover)
-        .on('footer', elementRemover)
-        .on('script', KeywordRemoverButInZeroCopy(env.TARGET_KEYWORD))
+      const new_modified_response = new HTMLRewriter()
+        .on('head', new MetabaseFooterRemover())  // NOTE: The ultimate goal of this project.
         .transform(new_response);
 
       if (_cache) ctx.waitUntil(_cache.put(_cache_key, new_modified_response.clone()));

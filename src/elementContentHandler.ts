@@ -57,3 +57,16 @@ const KeywordRemoverButInZeroCopy = (keyword /* FIXME: keywordHopelyInFirstChunk
   }
   return new _KeywordRemoverButInZeroCopy();
 };
+
+export
+class MetabaseFooterRemover implements HTMLRewriterElementContentHandlers {
+  element(element: Element) {
+    element.append(`<style>
+      .EmbedFrame-footer {
+        display: none !important;
+      }
+    </style>`, { html: true });
+    // FIXME: experimental.
+    // element.append(serviceWorkerInstallerModule, { html: true });
+  }
+}

@@ -1,6 +1,8 @@
+import { Buffer } from 'node:buffer';
+
 import type { Env } from "./env";
 import { generateCacheKeyAnyway, removeResponseHeadersForCaching } from "./cache";
-import { ElementRemover, BaseAdder, KeywordRemoverButInZeroCopy } from './elementContentHandler';
+import { ElementRemover, BaseAdder, KeywordRemoverButInZeroCopy, RemoveAHrefAndModifyOnclick } from './elementContentHandler';
 
 const elementRemover = new ElementRemover();
 
@@ -47,7 +49,7 @@ export default {
 
     const _response = await fetch(new_request_url.href, {
         method: request.method,
-        body: request.body,
+        body: request.body as ReadableStream<Uint8Array>,
         headers: new_request_headers,
     });
     const new_response_headers = new Headers(_response.headers);
@@ -61,10 +63,21 @@ export default {
 
     if (request.method === "GET" && new_response_headers.get('Content-Type')?.includes('html')) {
       const new_modified_response = new HTMLRewriter()  // NOTE: The unexpected benefit of this project.
-        .on('head', new BaseAdder(env.TARGET_HOST))
+        .on('head', new BaseAdder(
+          env.TARGET_HOST,
+          env.ADDITIONAL_SCRIPTS_B64 ? Buffer.from(env.ADDITIONAL_SCRIPTS_B64, 'base64').toString('utf8') : undefined,
+        ))
         .on('header', elementRemover)
         .on('footer', elementRemover)
         .on('script', KeywordRemoverButInZeroCopy(env.TARGET_KEYWORD))
+        .on(
+          env.REMOVE_HREF_TARGET || 'unknown',
+          new RemoveAHrefAndModifyOnclick(
+            env.MODIFYING_ONCLICK_SCRIPTS_B64
+            ? Buffer.from(env.MODIFYING_ONCLICK_SCRIPTS_B64, 'base64').toString('utf8')
+            : undefined
+          ),
+        )
         .transform(new_response);
 
       if (_cache) ctx.waitUntil(_cache.put(_cache_key, new_modified_response.clone()));

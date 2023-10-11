@@ -12,21 +12,16 @@ class BaseAdder implements HTMLRewriterElementContentHandlers {
   // NOTE: It reduce the huge bill on cloudflare worker. Because we don't handle the assets anymore.
 
   _baseHref: string;
-  constructor(baseHref: string) {
+  _additionalScripts?: string;
+  constructor(baseHref: string, additionalScripts: string | undefined = undefined) {
     this._baseHref = baseHref;
+    this._additionalScripts = additionalScripts;
   }
   element(element: Element) {
     element.prepend('<base href="//' + this._baseHref + '">', { html: true });
     // NOTE: Bypassing the base on XMLHttpRequest for CORS. (Hack)
     // Everything goes on `this._baseHref` but XMLHttpRequest (Huge thanks for $.ajax) goes on `origin`.
-    element.append(`<script>
-      $.ajaxSetup({
-        xhr: function () {
-          this.url = (new URL(this.url, (new URL(location.href)).origin)).href;
-          return new XMLHttpRequest();
-        },
-      });
-    </script>`, { html: true });
+    element.append(`<script>${this._additionalScripts || ''}</script>`, { html: true });
   }
 }
 
@@ -50,4 +45,17 @@ const KeywordRemoverButInZeroCopy = (keyword /* FIXME: keywordHopelyInFirstChunk
     }
   }
   return new _KeywordRemoverButInZeroCopy();
+};
+
+export
+class RemoveAHrefAndModifyOnclick implements HTMLRewriterElementContentHandlers {
+  _additionalScripts?: string;
+  constructor(additionalScripts: string | undefined = undefined) {
+    this._additionalScripts = additionalScripts;
+  }
+  element(element: Element)  {
+    element.removeAttribute('href');
+    const onclick = element.getAttribute('onclick') || '';
+    element.setAttribute('onclick', onclick.replace('return false', `${this._additionalScripts || ''}return false`));
+  }
 };
